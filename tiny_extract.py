@@ -16,6 +16,7 @@ Formatting details throughout history:
     - Uses "generate" mappings (aka intermediary)
         - In addition to regular mappings?
     - NO .csvs !!!!!
+    - Not intermediary
  - a1.2.1_1: First csv format
     - Starts the alpha csv format
         - Notably the alpha for
@@ -104,14 +105,12 @@ def build_descriptor_map_jar(jar_path: str):
         inner_map = {}
         for entry in jclass.fields:
             inner_map[entry.name.value] = entry.descriptor.value
-        for entry in jclass.methods:
-            inner_map[entry.name.value + "+func"] = entry.descriptor.value
         desc_map[class_name] = inner_map
 
     return desc_map
 
 
-def build_descriptor_map_moj(mc_ver: str, mc_dir : str):
+def build_descriptor_map_moj(mc_ver: str, mc_dir: str):
     """
     Downloads the obfuscated Minecraft client jar for a given version and
     builds the descriptor map.
@@ -125,7 +124,7 @@ def build_descriptor_map_moj(mc_ver: str, mc_dir : str):
 
 
 def revengpack_format(
-    mc_ver: str, mc_dir : str, config_path: str, out_path: str, do_warnings: bool = True
+    mc_ver: str, mc_dir: str, config_path: str, out_path: str, do_warnings: bool = True
 ):
     desc_map = build_descriptor_map_moj(mc_ver, mc_dir)
     os.makedirs(dirname(out_path), exist_ok=True)
@@ -174,11 +173,12 @@ def revengpack_format(
 
 def alpha_csv_format(
     mc_ver: str,
-    mc_dir : str,
+    mc_dir: str,
     config_path: str,
     out_path: str,
     classes_version: int = 1,
     do_warnings: bool = True,
+    use_mc_method_descs: bool = True,
 ):
     """
     :param classes_version: alpha format csv classes.csv files can contain
@@ -190,6 +190,7 @@ def alpha_csv_format(
 
     out = TinyV1Writer(["official", "intermediary", "named"])
 
+    # classes.csv parsing is intentionally untouched
     with open(join(config_path, "classes.csv"), "r", encoding="utf-8") as f:
         clsreader = iter(csv.reader(f, delimiter=",", quotechar='"'))
 
@@ -202,19 +203,7 @@ def alpha_csv_format(
                 continue
             out.add_class(entry[classes_version], entry[classes_version], entry[0])
 
-    # Build intermediary maps first
-    method_map = {}
     field_map = {}
-    with open(join(config_path, "minecraft.rgs"), "r", encoding="utf-8") as f:
-        for l in f.readlines():
-            l = l.strip()
-            if l.startswith(".method_map"):
-                _, off_name, desc, inter = l.split(" ")
-                method_map[inter] = [off_name, desc]
-            if l.startswith(".field_map"):
-                _, off_name, inter = l.split(" ")
-                field_map[inter] = off_name
-
     with open(join(config_path, "fields.csv"), "r", encoding="utf-8") as f:
         fieldreader = iter(csv.reader(f, delimiter=",", quotechar='"'))
 
@@ -232,36 +221,9 @@ def alpha_csv_format(
 
             named_name = entry[6]
 
-            if inter_name not in field_map:
-                if do_warnings:
-                    print(
-                        f"WARNING: {named_name} aka {inter_name} cannot be mapped "
-                        f"back to function."
-                    )
-                continue
+            field_map[inter_name] = named_name
 
-            off_path = field_map[inter_name]
-            off_cls = "/".join(off_path.split("/")[:-1])
-            off_name = off_path.split("/")[-1]
-
-            if off_cls not in desc_map:
-                if do_warnings:
-                    print(f"WARNING: {off_cls} not found in provided jar")
-                continue
-
-            owner_descs = desc_map[off_cls]
-            if off_name not in owner_descs:
-                if do_warnings:
-                    print(
-                        f"WARNING: field {off_name} cannot be resolved in {off_cls}: "
-                        f"{list(owner_descs.keys())}"
-                    )
-                continue
-
-            out.add_field(
-                off_cls, owner_descs[off_name], off_name, inter_name, named_name
-            )
-
+    methods_map = {}
     with open(join(config_path, "methods.csv"), "r", encoding="utf-8") as f:
         methodreader = iter(csv.reader(f, delimiter=",", quotechar='"'))
 
@@ -279,24 +241,85 @@ def alpha_csv_format(
 
             inter_name = entry[1]
             named_name = entry[4]
+            methods_map[inter_name] = named_name
 
-            assert named_name != "*", "Mapping issue"
+    # Canonicalize intermediary method names by (obf method name, descriptor),
+    # so overrides share a single target name across the hierarchy and avoid
+    # TinyRemapper conflicts.
+    canonical_inter_by_sig = {}
 
-            if inter_name not in method_map:
-                if do_warnings:
-                    print(
-                        f"WARNING: {named_name} aka {inter_name} cannot be mapped "
-                        f"back to method"
-                    )
-                continue
+    with open(join(config_path, "minecraft.rgs"), "r", encoding="utf-8") as f:
+        used_fields = set()
+        used_methods = set()
 
-            off_path, o_desc = method_map[inter_name]
-            off_cls = "/".join(off_path.split("/")[:-1])
-            off_name = off_path.split("/")[-1]
 
-            out.add_method(off_cls, o_desc, off_name, inter_name, named_name)
+        for l in f.readlines():
+            l = l.strip()
+            if l.startswith(".method_map") or l.startswith(".field_map"):
+                if l.startswith(".method_map"):
+                    _, off_name_full, desc, inter_name = l.split(" ")
+                else:
+                    _, off_name_full, inter_name = l.split(" ")
+                    desc = None
+
+                off_cls = "/".join(off_name_full.split("/")[:-1])
+                off_name = off_name_full.split("/")[-1]
+                named_name = inter_name
+
+                if l.startswith(".field_map"):
+                    if off_cls not in desc_map:
+                        if do_warnings:
+                            print(
+                                f"WARNING: {off_cls} not found in provided jar "
+                                f"while resolving field desc"
+                            )
+                        continue
+                    descs = desc_map[off_cls]
+                    if off_name not in descs:
+                        if do_warnings:
+                            print(
+                                f"WARNING: field {off_cls}/{off_name} "
+                                "descriptor not found"
+                            )
+                        continue
+                    desc = descs[off_name]
+
+                    # Intermediary from RGS; map to named via fields.csv if available
+                    if inter_name in field_map:
+                        named_name = field_map[inter_name]
+                    
+                    while (off_cls, named_name) in used_fields:
+                        if do_warnings:
+                            print(f"WARNING: {named_name} already in {off_cls}, renaming")
+                        named_name += "_"
+                    used_fields.add((off_cls, named_name))
+
+                    out.add_field(off_cls, desc, off_name, inter_name, named_name)
+                    continue
+
+                # .method_map path
+                # Choose a single canonical intermediary name per (obfName, desc)
+                sig_key = (off_name, desc)
+                canon_inter = canonical_inter_by_sig.get(sig_key)
+                if canon_inter is None:
+                    canonical_inter_by_sig[sig_key] = inter_name
+                    canon_inter = inter_name
+
+                # Use the canonical intermediary to derive named (if available)
+                named_name = methods_map.get(canon_inter, canon_inter)
+
+
+                while (off_cls, named_name + desc) in used_methods:
+                    if do_warnings:
+                        print(f"WARNING: {named_name} already in {off_cls}, renaming")
+                    named_name += "_"
+                used_methods.add((off_cls, named_name + desc))
+
+                # Write mapping using the canonical intermediary
+                out.add_method(off_cls, desc, off_name, canon_inter, named_name)
 
     out.write(out_path)
+    
 
 
 STYLE_REGENGPACK = [
@@ -325,14 +348,24 @@ STYLE_OLD_ALPHA = [
     {"ver": "a1.2.2", "sub": "mcp22a",  "mcver": "a1.2.0", "out": "a1.2.0-mcp22a",  "classes_version" : 1},
     {"ver": "a1.2.2", "sub": "mcp22a",  "mcver": "a1.2.2b", "out": "a1.2.2b-mcp22a",  "classes_version" : 2},
 
-    {"ver": "a1.2.3_04", "sub": "mcp23", "mcver": "a1.2.2b", "out": "a1.2.2-mcp23", "classes_version": 1},
+    {"ver": "a1.2.3_04", "sub": "mcp23", "mcver": "a1.2.2b", "out": "a1.2.2b-mcp23", "classes_version": 1},
     {"ver": "a1.2.3_04", "sub": "mcp23", "mcver": "a1.2.3_02", "out": "a1.2.3_02-mcp23", "classes_version": 2},
 
-    {"ver": "a1.2.5", "sub": "mcp24", "mcver": "a1.2.2b", "out": "a1.2.2-mcp24", "classes_version": 1},
+    {"ver": "a1.2.5", "sub": "mcp24", "mcver": "a1.2.2b", "out": "a1.2.2b-mcp24", "classes_version": 1},
     {"ver": "a1.2.5", "sub": "mcp24", "mcver": "a1.2.3_02", "out": "a1.2.3_02-mcp24", "classes_version": 2},
 
     {"ver": "a1.2.6", "sub": "mcp25", "mcver": "a1.2.5", "out": "a1.2.5-mcp25", "classes_version": 1},
     {"ver": "a1.2.6", "sub": "mcp25", "mcver": "a1.2.6", "out": "a1.2.6-mcp25", "classes_version": 2},
+    
+
+    # Says it is for beta, but im not sure about that
+    {"ver": "b1.1_02", "sub": "mcp26", "mcver": "a1.2.2b", "out": "a1.2.2b-mcp26", "classes_version": 1},
+    {"ver": "b1.1_02", "sub": "mcp26", "mcver": "a1.2.3_02", "out": "a1.2.3_02-mcp26", "classes_version": 2},
+
+    # Beta versions that use the alpha csv format
+    {"ver": "b1.2_01", "sub": "mcp27", "mcver": "b1.1_02", "out": "b1.1_02-mcp27", "classes_version": 1},
+    {"ver": "b1.2_01", "sub": "mcp27", "mcver": "b1.2_02", "out": "b1.2_02-mcp27", "classes_version": 2},
+
 ]
 
 def generate_all_tiny(do_warnings):
@@ -368,7 +401,7 @@ def generate_all_tiny(do_warnings):
 
 
 def main():
-    generate_all_tiny(False)
+    generate_all_tiny(True)
 
 
 if __name__ == "__main__":

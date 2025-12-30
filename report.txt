@@ -1,0 +1,37 @@
+
+a1.1.2					md5					classes	fields	methods	size
+	revengpack16.tiny		2214f4b0d4ccb6b85584a0aee24ce3c4	403	495	3	2801
+
+a1.2.1_01					md5					classes	fields	methods	size
+	a1.1.2-mcp20.tiny		a1bcd4b814c86f0d6826105abe523297	402	536	2615	16965
+	a1.1.2-mcp20a.tiny		a1bcd4b814c86f0d6826105abe523297	402	536	2615	16965
+	a1.2.0-mcp20.tiny		98df96b3a31d6e473222b5b4af065d15	442	1944	2615	24125
+	a1.2.0-mcp20a.tiny		98df96b3a31d6e473222b5b4af065d15	442	1944	2615	24125
+
+a1.2.2					md5					classes	fields	methods	size
+	a1.1.2-mcp21.tiny		14f2b1ec73ad5bc9f2f2def286c7d76e	402	585	2677	17520
+	a1.2.0-mcp21.tiny		4258eee5290fce81ec5f7977c66b376e	442	584	2677	17635
+	a1.2.0-mcp22.tiny		4288c512a5a84c3a3676e3afdec4598b	441	584	2677	17632
+	a1.2.0-mcp22a.tiny		57d3dbfc265a5c112faca62c06d02e65	441	584	2681	17652
+	a1.2.2b-mcp22.tiny		4fd84bfd98dd3a2894f9a50dc75145a4	449	2005	2677	24761
+	a1.2.2b-mcp22a.tiny		ee313efe4af4f8a5f6a46bd3c890d28c	449	2005	2681	24781
+
+a1.2.3_04					md5					classes	fields	methods	size
+	a1.2.2b-mcp23.tiny		28ba2e6cbe0dd389ccdd4562b1ab21eb	453	814	2715	19008
+	a1.2.3_02-mcp23.tiny		014ef226815ed63d11e58acc63149004	453	2011	2715	24993
+
+a1.2.5					md5					classes	fields	methods	size
+	a1.2.2b-mcp24.tiny		aff27199164384196a4883ea7f817da4	453	810	2726	19043
+	a1.2.3_02-mcp24.tiny		e282bba2d8484bd00d7faa2fe2c07747	453	1552	2726	22753
+
+a1.2.6					md5					classes	fields	methods	size
+	a1.2.5-mcp25.tiny		d542f94006b394767c019401e4ca61b3	454	782	2727	18911
+	a1.2.6-mcp25.tiny		1ca7bbfedd21723bfc58a8a335d3b65c	455	2029	2727	25149
+
+b1.1_02					md5					classes	fields	methods	size
+	a1.2.2b-mcp26.tiny		cc2e45f6285f5fcdb848e06ff5f0913f	453	510	2746	17643
+	a1.2.3_02-mcp26.tiny		2ae3ae03b145c1d4f135257bd381290e	453	529	2746	17738
+
+b1.2_01					md5					classes	fields	methods	size
+	b1.1_02-mcp27.tiny		ddda7584764f73179928539b7d7d6b78	471	520	3024	19137
+	b1.2_02-mcp27.tiny		cc3bcb1a4b3c882f41bb27f76f733e55	508	2062	3024	26958
