@@ -34,11 +34,15 @@ def get_namespaces(mapping_file):
 
 if __name__ == "__main__":
     
-    with tempfile.TemporaryDirectory(delete=False) as tempdir:
+    with tempfile.TemporaryDirectory(delete=True) as tempdir:
         for diR in sorted(os.listdir("tiny_v1s")):
+            if not diR.startswith("b"):
+                continue
+
+        # for diR in ["b1.2_01"]:
             full_dir = os.path.join("tiny_v1s", diR)
             # for file in sorted(os.listdir(full_dir)):
-            for file in ["b1.2_01"]:
+            for file in sorted(os.listdir(full_dir)):
                 full_file = os.path.join(full_dir, file)
 
                 official, *other = get_namespaces(full_file)

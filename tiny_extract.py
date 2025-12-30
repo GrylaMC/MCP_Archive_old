@@ -58,7 +58,7 @@ if not exists(SCRIPTS_DIR):
 
 sys.path.append(SCRIPTS_DIR)
 
-from mc import download_mojang_file
+from mcjar import get_piston_file 
 from jawa.classloader import ClassLoader
 import tempfile
 
@@ -115,10 +115,7 @@ def build_descriptor_map_moj(mc_ver: str, mc_dir: str):
     Downloads the obfuscated Minecraft client jar for a given version and
     builds the descriptor map.
     """
-    jar_path = join(mc_dir, mc_ver + ".jar")
-
-    if not exists(jar_path):
-        download_mojang_file(mc_ver, "client", jar_path)
+    jar_path = get_piston_file(mc_ver, "client") 
     desc_map = build_descriptor_map_jar(jar_path)
     return desc_map
 
@@ -364,8 +361,14 @@ STYLE_OLD_ALPHA = [
 
     # Beta versions that use the alpha csv format
     {"ver": "b1.2_01", "sub": "mcp27", "mcver": "b1.1_02", "out": "b1.1_02-mcp27", "classes_version": 1},
-    {"ver": "b1.2_01", "sub": "mcp27", "mcver": "b1.2_02", "out": "b1.2_02-mcp27", "classes_version": 2},
+    # Creates an invalid tiny file
+    # {"ver": "b1.2_01", "sub": "mcp27", "mcver": "b1.2_02", "out": "b1.2_02-mcp27", "classes_version": 2},
 
+    {"ver": "b1.3_01", "sub": "mcp29", "mcver": "b1.1_02", "out": "b1.1_02-mcp29", "classes_version": 1},
+    {"ver": "b1.3_01", "sub": "mcp29", "mcver": "b1.2_02", "out": "b1.2_02-mcp29", "classes_version": 2},
+
+    {"ver": "b1.3_01", "sub": "mcp29a", "mcver": "b1.2_02", "out": "b1.2_02-mcp29a", "classes_version": 1},
+    {"ver": "b1.3_01", "sub": "mcp29a", "mcver": "b1.3_01", "out": "b1.3_01-mcp29a", "classes_version": 2},
 ]
 
 def generate_all_tiny(do_warnings):
