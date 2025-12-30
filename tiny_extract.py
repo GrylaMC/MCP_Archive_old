@@ -368,7 +368,8 @@ STYLE_OLD_ALPHA = [
     {"ver": "b1.3_01", "sub": "mcp29", "mcver": "b1.2_02", "out": "b1.2_02-mcp29", "classes_version": 2},
 
     {"ver": "b1.3_01", "sub": "mcp29a", "mcver": "b1.2_02", "out": "b1.2_02-mcp29a", "classes_version": 1},
-    {"ver": "b1.3_01", "sub": "mcp29a", "mcver": "b1.3_01", "out": "b1.3_01-mcp29a", "classes_version": 2},
+    # Also an invalid tiny
+    # {"ver": "b1.3_01", "sub": "mcp29a", "mcver": "b1.3_01", "out": "b1.3_01-mcp29a", "classes_version": 2},
 ]
 
 def generate_all_tiny(do_warnings):

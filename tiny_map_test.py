@@ -36,8 +36,6 @@ if __name__ == "__main__":
     
     with tempfile.TemporaryDirectory(delete=True) as tempdir:
         for diR in sorted(os.listdir("tiny_v1s")):
-            if not diR.startswith("b"):
-                continue
 
         # for diR in ["b1.2_01"]:
             full_dir = os.path.join("tiny_v1s", diR)
